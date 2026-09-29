@@ -1,0 +1,24 @@
+name: 테스트
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 단위 테스트 (파서 · 계산 엔진 · 인사이트 · 엑셀 내보내기)
+        run: node --test tests/*.test.js
+      - name: 샘플 데이터가 생성기 결과와 같은지 확인
+        run: |
+          node scripts/make-sample.js
+          git diff --exit-code -- sample js/sample-data.js

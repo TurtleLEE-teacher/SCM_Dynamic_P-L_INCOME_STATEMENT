@@ -1,0 +1,10 @@
+{
+  "name": "scm-dynamic-pl-income-statement",
+  "private": true,
+  "description": "Raw data 엑셀·CSV 를 올리면 손익계산서와 대시보드, 인사이트를 자동으로 만드는 정적 웹사이트",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "sample": "node scripts/make-sample.js",
+    "start": "npx --yes http-server -p 8080 -c-1 ."
+  }
+}
