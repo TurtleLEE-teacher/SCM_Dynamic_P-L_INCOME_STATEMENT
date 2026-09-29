@@ -110,6 +110,13 @@ tests/                node --test 단위 테스트
 docs/PLAN.md          개발 계획과 진행 기록
 ```
 
+## 자동 병합과 배포
+
+- 같은 저장소의 `claude/` 브랜치 PR 은 **자동 병합**됩니다(`.github/workflows/auto-merge.yml`). 단위 테스트와 샘플 재생성 검사를 통과하면 병합하고 Pages 배포를 띄웁니다.
+- 병합을 막고 싶은 PR 에는 `hold` 라벨을 붙입니다.
+- 워크플로 파일을 고치는 PR 은 워크플로 토큰 권한 밖이라, 검사 통과 뒤 PR 을 만든 세션이 병합합니다.
+- 배포는 `.github/workflows/pages.yml` 이 맡습니다. 저장소 Settings → Pages → Source 가 **GitHub Actions** 여야 합니다(처음 한 번).
+
 ## 개발
 
 ```bash
