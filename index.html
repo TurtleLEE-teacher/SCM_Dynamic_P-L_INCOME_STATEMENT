@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>자동 손익 대시보드</title>
+<meta name="description" content="Raw data 엑셀·CSV 파일을 올리면 전사·법인별 손익계산서와 대시보드, 인사이트를 자동으로 만듭니다.">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="bar">
+  <div class="bar-inner">
+    <div class="brand">
+      <strong>자동 손익 대시보드</strong>
+      <span class="file" id="fileName">SCM 부트캠프 3차 과제</span>
+    </div>
+    <div class="actions">
+      <label class="btn btn-primary" for="fileInput" tabindex="0">파일 올리기</label>
+      <input type="file" id="fileInput" accept=".xlsx,.xlsm,.xls,.csv" hidden>
+      <button type="button" class="btn" id="sampleBtn">샘플로 체험</button>
+      <button type="button" class="btn" id="exportBtn" disabled>엑셀로 내보내기</button>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+
+  <!-- 빈 화면: 행동 유도 -->
+  <section class="empty" id="empty">
+    <div class="drop" id="dropZone">
+      <p class="drop-title">Raw data 파일을 여기에 끌어다 놓으세요</p>
+      <p class="drop-sub">엑셀(.xlsx) 또는 CSV 를 올리면 손익계산서와 대시보드가 바로 만들어집니다.
+        파일은 이 브라우저 안에서만 처리되고 어디에도 전송되지 않습니다.</p>
+      <div class="drop-actions">
+        <label class="btn btn-primary btn-lg" for="fileInput" tabindex="0">파일 고르기</label>
+        <button type="button" class="btn btn-lg" id="sampleBtn2">샘플 데이터로 체험하기</button>
+      </div>
+    </div>
+    <div class="grid empty-guide">
+      <div class="col-4 guide-card">
+        <span class="num">1</span>
+        <h3>필요한 열</h3>
+        <p>회사명 · 월(또는 거래일시) · 대분류 코드 · 중분류 코드 · 금액. 열 순서와 앞쪽 제목 행은 상관없습니다.</p>
+      </div>
+      <div class="col-4 guide-card">
+        <span class="num">2</span>
+        <h3>자동 정비</h3>
+        <p>빈 행 제거, "1,234" 같은 텍스트 숫자 변환, "1월"·20220101 같은 날짜 형식 통일을 알아서 합니다.</p>
+      </div>
+      <div class="col-4 guide-card">
+        <span class="num">3</span>
+        <h3>관점 전환</h3>
+        <p>전사와 법인별 관점, 분석 기간을 바꾸면 손익계산서·차트·인사이트가 모두 다시 계산됩니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 대시보드 -->
+  <section class="dash" id="dash" hidden>
+    <div class="controls">
+      <div class="control">
+        <span class="control-label">관점</span>
+        <div class="seg" id="entitySeg" role="radiogroup" aria-label="관점"></div>
+      </div>
+      <div class="control">
+        <span class="control-label">기간</span>
+        <select id="fromSel" aria-label="시작 월"></select>
+        <span class="tilde">~</span>
+        <select id="toSel" aria-label="끝 월"></select>
+      </div>
+      <button type="button" class="check-badge" id="checkBtn" aria-haspopup="dialog"></button>
+    </div>
+
+    <h1 class="title" id="title">손익 요약</h1>
+    <p class="headmsg" id="headline"></p>
+    <hr class="divider">
+
+    <nav class="tabs" role="tablist" aria-label="대시보드 화면">
+      <button type="button" role="tab" class="tab" data-tab="summary" aria-selected="true">요약</button>
+      <button type="button" role="tab" class="tab" data-tab="statement" aria-selected="false">손익계산서</button>
+      <button type="button" role="tab" class="tab" data-tab="profit" aria-selected="false">수익성</button>
+      <button type="button" role="tab" class="tab" data-tab="sga" aria-selected="false">판관비</button>
+      <button type="button" role="tab" class="tab" data-tab="insight" aria-selected="false">인사이트</button>
+    </nav>
+
+    <!-- 요약 -->
+    <div class="tab-panel" id="tab-summary" role="tabpanel">
+      <div class="kpi-row" id="kpiRow"></div>
+      <div class="grid">
+        <section class="col-7 vcol">
+          <h3 class="subtitle">월별 매출액과 영업이익률</h3>
+          <div class="chart-panel">
+            <div class="chart-wrap h200"><canvas id="cRevenue" aria-label="월별 매출액 막대 차트"></canvas></div>
+            <div class="chart-wrap h140"><canvas id="cMargin" aria-label="월별 영업이익률 선 차트"></canvas></div>
+            <p class="cap" id="capRevenue"></p>
+          </div>
+        </section>
+        <section class="col-5 vcol">
+          <h3 class="subtitle">매출에서 세전이익까지</h3>
+          <div class="chart-panel">
+            <div class="chart-wrap h340"><canvas id="cWaterfall" aria-label="손익 폭포 차트"></canvas></div>
+            <p class="cap" id="capWaterfall"></p>
+          </div>
+        </section>
+      </div>
+      <h3 class="subtitle mt">먼저 볼 인사이트</h3>
+      <ol class="mini-insights" id="miniInsights"></ol>
+    </div>
+
+    <!-- 손익계산서 -->
+    <div class="tab-panel" id="tab-statement" role="tabpanel" hidden>
+      <div class="toolbar">
+        <div class="seg seg-sm" id="groupSeg" role="radiogroup" aria-label="집계 단위">
+          <button type="button" data-v="month" aria-checked="true" role="radio">월별</button>
+          <button type="button" data-v="quarter" aria-checked="false" role="radio">분기별</button>
+        </div>
+        <div class="seg seg-sm" id="unitSeg" role="radiogroup" aria-label="금액 단위">
+          <button type="button" data-v="원" aria-checked="true" role="radio">원</button>
+          <button type="button" data-v="천원" aria-checked="false" role="radio">천원</button>
+          <button type="button" data-v="백만원" aria-checked="false" role="radio">백만원</button>
+        </div>
+        <p class="toolbar-note" id="stmtNote"></p>
+      </div>
+      <div class="table-scroll">
+        <table class="pl" id="plTable"></table>
+      </div>
+      <p class="cap" id="capStatement"></p>
+    </div>
+
+    <!-- 수익성 -->
+    <div class="tab-panel" id="tab-profit" role="tabpanel" hidden>
+      <div class="grid">
+        <section class="col-6 vcol">
+          <h3 class="subtitle">법인별 이익률 비교</h3>
+          <div class="chart-panel">
+            <div class="chart-wrap h260"><canvas id="cMarginCompare" aria-label="법인별 이익률 비교"></canvas></div>
+            <p class="cap" id="capMarginCompare"></p>
+          </div>
+        </section>
+        <section class="col-6 vcol">
+          <h3 class="subtitle">매출 100원의 쓰임새</h3>
+          <div class="chart-panel">
+            <div class="chart-wrap h260"><canvas id="cUse100" aria-label="매출 대비 비용 구성"></canvas></div>
+            <p class="cap" id="capUse100"></p>
+          </div>
+        </section>
+        <section class="col-6 vcol">
+          <h3 class="subtitle" id="stQuarter">분기별 영업이익과 영업이익률</h3>
+          <div class="chart-panel">
+            <div class="chart-wrap h180"><canvas id="cQuarterOp" aria-label="분기별 영업이익"></canvas></div>
+            <div class="chart-wrap h140"><canvas id="cQuarterOpm" aria-label="분기별 영업이익률"></canvas></div>
+            <p class="cap">분기 실적 기준입니다(누계 아님).</p>
+          </div>
+        </section>
+        <section class="col-6 vcol">
+          <h3 class="subtitle">매출 대비 원가 항목 비율 (월별)</h3>
+          <div class="chart-panel">
+            <div class="chart-wrap h320"><canvas id="cCostRatio" aria-label="원가 항목 비율 추이"></canvas></div>
+            <p class="cap" id="capCostRatio"></p>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- 판관비 -->
+    <div class="tab-panel" id="tab-sga" role="tabpanel" hidden>
+      <div class="grid">
+        <section class="col-5 vcol">
+          <h3 class="subtitle">판관비 구성</h3>
+          <div class="chart-panel">
+            <div class="chart-wrap h260"><canvas id="cSgaMix" aria-label="판관비 항목 구성"></canvas></div>
+            <p class="cap" id="capSgaMix"></p>
+          </div>
+        </section>
+        <section class="col-7 vcol">
+          <h3 class="subtitle">월별 판관비 추이</h3>
+          <div class="chart-panel">
+            <div class="chart-wrap h260"><canvas id="cSgaTrend" aria-label="월별 판관비 누적 막대"></canvas></div>
+            <p class="cap" id="capSgaTrend"></p>
+          </div>
+        </section>
+        <section class="col-5 vcol">
+          <h3 class="subtitle">판관비율 추이</h3>
+          <div class="chart-panel">
+            <div class="chart-wrap h240"><canvas id="cSgaRatio" aria-label="월별 판관비율"></canvas></div>
+            <p class="cap" id="capSgaRatio"></p>
+          </div>
+        </section>
+        <section class="col-7 vcol">
+          <h3 class="subtitle" id="stSgaChange">항목별 증감</h3>
+          <div class="chart-panel">
+            <table class="tbl" id="sgaChangeTable"></table>
+            <p class="cap">증감률이 큰 순서입니다. 줄어든 항목은 삭감 효과가 끝난 뒤 이익에 주는 영향을 함께 봐야 합니다.</p>
+          </div>
+        </section>
+        <section class="col-12 vcol" id="sgaCompareWrap">
+          <h3 class="subtitle">법인별 판관비 항목 비율 (매출 대비)</h3>
+          <div class="chart-panel">
+            <table class="tbl" id="sgaCompareTable"></table>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- 인사이트 -->
+    <div class="tab-panel" id="tab-insight" role="tabpanel" hidden>
+      <p class="insight-note">숫자에서 규칙으로 자동 생성한 문장입니다. 규칙 9개 가운데 조건을 만족한 결과를 중요도 순으로 보여줍니다.</p>
+      <div class="insight-grid" id="insightGrid"></div>
+      <div class="takeaway" id="takeaway"><span class="tag">종합 시사점</span><p id="takeawayText"></p></div>
+      <details class="rule-list">
+        <summary>조건을 만족한 규칙 전체 보기</summary>
+        <ol id="allRules"></ol>
+      </details>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>Source: 업로드한 Raw data · 모든 계산은 브라우저 안에서 수행</span>
+    <span>SCM 부트캠프 3차 과제 · 바이브코딩 데모</span>
+  </footer>
+</main>
+
+<!-- 데이터 점검 리포트 -->
+<dialog class="dialog" id="checkDialog" aria-labelledby="checkTitle">
+  <div class="dialog-head">
+    <h2 id="checkTitle">데이터 점검 리포트</h2>
+    <button type="button" class="btn btn-icon" id="checkClose" aria-label="닫기">×</button>
+  </div>
+  <div id="checkBody"></div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="vendor/chart.umd.min.js"></script>
+<script src="vendor/chartjs-plugin-datalabels.min.js"></script>
+<script src="js/format.js"></script>
+<script src="js/parser.js"></script>
+<script src="js/pnl.js"></script>
+<script src="js/insights.js"></script>
+<script src="js/export.js"></script>
+<script src="js/sample-data.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
