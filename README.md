@@ -3,7 +3,7 @@
 Raw data 엑셀·CSV 파일을 올리면 **전사·본사·폴란드법인 손익계산서와 대시보드, 인사이트**가 자동으로 나오는 웹사이트입니다.
 3차 과제에서 SUMIFS·차트·조건부 서식으로 며칠 걸려 만들던 결과물을, 바이브코딩으로 만든 사이트 하나가 몇 초 만에 만들어 냅니다.
 
-- 사이트 주소: `https://turtlelee-teacher.github.io/SCM_Dynamic_P-L_INCOME_STATEMENT/` (GitHub Pages 설정 후 열립니다)
+- 사이트 주소: https://turtlelee-teacher.github.io/SCM_Dynamic_P-L_INCOME_STATEMENT/ (주소 끝에 `#sample` 을 붙이면 샘플이 바로 열립니다)
 - 설치할 것이 없습니다. 저장소를 내려받아 `index.html` 을 더블클릭해도 동작합니다.
 - 올린 파일은 **브라우저 안에서만** 처리되고 서버로 전송되지 않습니다.
 
